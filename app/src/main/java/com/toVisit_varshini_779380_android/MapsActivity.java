@@ -1,21 +1,32 @@
 package com.toVisit_varshini_779380_android;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentActivity;
-
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -29,10 +40,22 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.model.TypeFilter;
+import com.google.android.libraries.places.api.net.PlacesClient;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+
+import java.util.Arrays;
+
+import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL;
+import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_SATELLITE;
+import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_TERRAIN;
+
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -80,7 +103,6 @@ public class MapsActivity extends FragmentActivity implements
     }
 
 
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
@@ -100,12 +122,75 @@ public class MapsActivity extends FragmentActivity implements
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        ImageView change_type = findViewById(R.id.change_type);
+
+        change_type.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                LayoutInflater layoutInflater = LayoutInflater.from(MapsActivity.this);
+                final View dialogView = layoutInflater.inflate(R.layout.dialog_change_map, null);
+                final AlertDialog alertDialog = new AlertDialog.Builder(MapsActivity.this).create();
+                alertDialog.setView(dialogView);
+
+                LinearLayout defaultMap = dialogView.findViewById(R.id.default_map);
+                LinearLayout satelliteMap = dialogView.findViewById(R.id.satellite);
+                LinearLayout terrainMap = dialogView.findViewById(R.id.terrain);
+
+                final TextView defaultText = dialogView.findViewById(R.id.default_text);
+                final TextView satelliteText = dialogView.findViewById(R.id.satellite_text);
+                final TextView terrainText = dialogView.findViewById(R.id.terrainText);
+
+                if (mMap.getMapType() == MAP_TYPE_NORMAL) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        defaultText.setTextColor(getColor(R.color.colorMapTypeSelected));
+                    }
+                } else if (mMap.getMapType() == MAP_TYPE_SATELLITE) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        satelliteText.setTextColor(getColor(R.color.colorMapTypeSelected));
+                    }
+                } else if (mMap.getMapType() == MAP_TYPE_TERRAIN) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        terrainText.setTextColor(getColor(R.color.colorMapTypeSelected));
+                    }
+                }
+
+
+                defaultMap.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        alertDialog.dismiss();
+                        mMap.setMapType(MAP_TYPE_NORMAL);
+                    }
+                });
+
+                satelliteMap.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        alertDialog.dismiss();
+                        mMap.setMapType(MAP_TYPE_SATELLITE);
+                    }
+                });
+                terrainMap.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        alertDialog.dismiss();
+                        mMap.setMapType(MAP_TYPE_TERRAIN);
+                    }
+                });
+                alertDialog.show();
+
+            }
+        });
+
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         cameraAnimated = false;
+
+        mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
         initLocCallback();
 
@@ -115,6 +200,36 @@ public class MapsActivity extends FragmentActivity implements
         } else {
             ActivityCompat.requestPermissions(MapsActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
         }
+
+        String apiKey = getString(R.string.api_key);
+
+        if (!Places.isInitialized()) {
+            Places.initialize(getApplicationContext(), apiKey);
+        }
+        PlacesClient placesClient = Places.createClient(this);
+
+
+        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
+                getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG));
+        autocompleteFragment.setHint("Search here");
+        autocompleteFragment.setTypeFilter(TypeFilter.ADDRESS);
+        final ImageView searchIcon = (ImageView) ((LinearLayout) autocompleteFragment.getView()).getChildAt(0);
+        searchIcon.setVisibility(View.GONE);
+        EditText etPlace = autocompleteFragment.getView().findViewById(R.id.places_autocomplete_search_input);
+        etPlace.setHintTextColor(getResources().getColor(R.color.colorHint));
+
+
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+
+            }
+
+            @Override
+            public void onError(Status status) {
+            }
+        });
     }
 
     protected synchronized void buildGoogleApiClient() {

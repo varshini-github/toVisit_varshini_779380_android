@@ -317,7 +317,7 @@ public class MapsActivity extends FragmentActivity implements
                     Button confirm_button = dialogView.findViewById(R.id.confirm_button);
                     Button cancel_button = dialogView.findViewById(R.id.cancel_button);
 
-                    message.setText("Do you want to add" + userMarker.getTitle() + " to favorites?");
+                    message.setText("Do you want to add " + userMarker.getTitle() + " to favorites?");
                     confirm_button.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
@@ -327,6 +327,7 @@ public class MapsActivity extends FragmentActivity implements
                                     "'" + userLat + "'," +
                                     "'" + userLon + "');");
                             Toast.makeText(MapsActivity.this, "Added to favorites.", Toast.LENGTH_SHORT).show();
+                            finish();
                         }
                     });
                     cancel_button.setOnClickListener(new View.OnClickListener() {

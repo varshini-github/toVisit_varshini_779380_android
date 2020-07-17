@@ -2,20 +2,31 @@ package com.toVisit_varshini_779380_android;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -39,7 +50,11 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -50,7 +65,13 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_SATELLITE;
@@ -60,13 +81,18 @@ import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_TERRAIN;
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener,
+        GoogleMap.OnMarkerDragListener,
+        GoogleMap.OnMapLongClickListener {
 
     private GoogleMap mMap;
     private boolean cameraAnimated;
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
+    private Marker userMarker;
+    private ImageView favorite;
+    private SQLiteDatabase sqLiteDatabase;
 
 
     @Override
@@ -102,6 +128,70 @@ public class MapsActivity extends FragmentActivity implements
 
     }
 
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+        if (userMarker == null) {
+            MarkerOptions markerOptions = new MarkerOptions().position(latLng);
+            String address = getAddress(latLng);
+            userMarker = mMap.addMarker(
+                    markerOptions
+                            .title(address));
+            userMarker.setDraggable(true);
+            showFavoriteOption();
+        }
+    }
+
+    @Override
+    public void onMarkerDragStart(Marker marker) {
+
+    }
+
+    @Override
+    public void onMarkerDrag(Marker marker) {
+
+    }
+
+    @Override
+    public void onMarkerDragEnd(Marker marker) {
+        String address = getAddress(new LatLng(marker.getPosition().latitude, marker.getPosition().longitude));
+        userMarker = marker;
+        userMarker.setTitle(address);
+        if (userMarker.isInfoWindowShown()) {
+            userMarker.showInfoWindow();
+        }
+    }
+
+    private void showFavoriteOption() {
+        favorite.setVisibility(View.VISIBLE);
+    }
+
+    private void hideFavoriteOption() {
+        favorite.setVisibility(View.GONE);
+    }
+
+    private String getAddress(LatLng latLng) {
+        Geocoder geocoder;
+        String address = null;
+        List<Address> addresses;
+        geocoder = new Geocoder(this, Locale.getDefault());
+
+        try {
+            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+            address = addresses.get(0).getAddressLine(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (address == null || address.equals("")) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+            address = sdf.format(new Date());
+        }
+
+
+        return address;
+
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
@@ -119,11 +209,17 @@ public class MapsActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+        sqLiteDatabase = this.openOrCreateDatabase("UserDB", MODE_PRIVATE, null);
+
+        sqLiteDatabase.execSQL("CREATE TABLE IF NOT EXISTS FavoritePlaces (Title VARCHAR, Latitude VARCHAR, Longitude VARCHAR);");
+
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
         ImageView change_type = findViewById(R.id.change_type);
+        favorite = findViewById(R.id.favorite);
 
         change_type.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -179,6 +275,71 @@ public class MapsActivity extends FragmentActivity implements
                     }
                 });
                 alertDialog.show();
+            }
+        });
+
+        favorite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ArrayList<String> favoriteLat = new ArrayList<>();
+                ArrayList<String> favoriteLon = new ArrayList<>();
+                Cursor cursor = sqLiteDatabase.rawQuery("SELECT * FROM " + "FavoritePlaces", null);
+                int latColumn = cursor.getColumnIndex("Latitude");
+                int lonColumn = cursor.getColumnIndex("Longitude");
+                cursor.moveToFirst();
+
+                if (cursor != null && cursor.getCount() != 0) {
+                    do {
+                        favoriteLat.add(cursor.getString(latColumn));
+                        favoriteLon.add(cursor.getString(lonColumn));
+                    } while (cursor.moveToNext());
+                }
+                final String userLat = Double.toString(userMarker.getPosition().latitude);
+                final String userLon = Double.toString(userMarker.getPosition().longitude);
+                boolean sameFavoriteExists = false;
+                for (int i = 0; i < favoriteLat.size(); i++) {
+                    if (favoriteLat.get(i).equals(userLat) &&
+                            favoriteLon.get(i).equals(userLon)) {
+                        sameFavoriteExists = true;
+                        return;
+                    }
+                }
+                if (sameFavoriteExists) {
+                    Toast.makeText(MapsActivity.this, "You have already marked this location as favorite", Toast.LENGTH_SHORT).show();
+                } else {
+                    LayoutInflater layoutInflater = LayoutInflater.from(MapsActivity.this);
+                    final View dialogView = layoutInflater.inflate(R.layout.dialog_confirmation, null);
+                    final AlertDialog confirmSaveLocation = new AlertDialog.Builder(MapsActivity.this).create();
+                    confirmSaveLocation.setView(dialogView);
+                    confirmSaveLocation.setCancelable(false);
+
+                    TextView message = dialogView.findViewById(R.id.message);
+                    Button confirm_button = dialogView.findViewById(R.id.confirm_button);
+                    Button cancel_button = dialogView.findViewById(R.id.cancel_button);
+
+                    message.setText("Do you want to add" + userMarker.getTitle() + " to favorites?");
+                    confirm_button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            confirmSaveLocation.dismiss();
+                            sqLiteDatabase.execSQL("INSERT INTO FavoritePlaces VALUES " +
+                                    "('" + userMarker.getTitle().replaceAll("'", "''") + "'," +
+                                    "'" + userLat + "'," +
+                                    "'" + userLon + "');");
+                            Toast.makeText(MapsActivity.this, "Added to favorites.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    cancel_button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            confirmSaveLocation.dismiss();
+                        }
+                    });
+
+                    confirmSaveLocation.show();
+
+                }
+
 
             }
         });
@@ -189,6 +350,8 @@ public class MapsActivity extends FragmentActivity implements
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         cameraAnimated = false;
+        mMap.setOnMapLongClickListener(this);
+        mMap.setOnMarkerDragListener(this);
 
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
@@ -214,16 +377,46 @@ public class MapsActivity extends FragmentActivity implements
         autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG));
         autocompleteFragment.setHint("Search here");
         autocompleteFragment.setTypeFilter(TypeFilter.ADDRESS);
+        autocompleteFragment.setCountry("CA");
         final ImageView searchIcon = (ImageView) ((LinearLayout) autocompleteFragment.getView()).getChildAt(0);
         searchIcon.setVisibility(View.GONE);
-        EditText etPlace = autocompleteFragment.getView().findViewById(R.id.places_autocomplete_search_input);
+        final EditText etPlace = autocompleteFragment.getView().findViewById(R.id.places_autocomplete_search_input);
         etPlace.setHintTextColor(getResources().getColor(R.color.colorHint));
 
+        final ImageView clearIcon = (ImageView) ((LinearLayout) autocompleteFragment.getView()).findViewById(R.id.places_autocomplete_clear_button);
+        clearIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (userMarker != null) {
+                    clearIcon.setVisibility(View.GONE);
+                    etPlace.setText(null);
+                    userMarker.remove();
+                    userMarker = null;
+                    hideFavoriteOption();
+                }
+            }
+        });
 
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(Place place) {
-
+                if (userMarker != null) {
+                    String address = getAddress(place.getLatLng());
+                    userMarker.setPosition(place.getLatLng());
+                    userMarker.setTitle(address);
+                    if (userMarker.isInfoWindowShown()) {
+                        userMarker.showInfoWindow();
+                    }
+                } else {
+                    MarkerOptions markerOptions = new MarkerOptions().position(place.getLatLng());
+                    String address = getAddress(place.getLatLng());
+                    userMarker = mMap.addMarker(
+                            markerOptions
+                                    .title(address));
+                    userMarker.setDraggable(true);
+                    showFavoriteOption();
+                }
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(), 15));
             }
 
             @Override
@@ -289,5 +482,16 @@ public class MapsActivity extends FragmentActivity implements
                 }
             }
         };
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (userMarker != null) {
+            mMap.clear();
+            userMarker = null;
+            hideFavoriteOption();
+        } else {
+            super.onBackPressed();
+        }
     }
 }

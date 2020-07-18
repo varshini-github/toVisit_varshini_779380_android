@@ -1,22 +1,16 @@
-package com.toVisit_varshini_779380_android;
+package com.toVisit_varshini_779380_android.activities;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -26,7 +20,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -50,8 +43,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -64,6 +55,7 @@ import com.google.android.libraries.places.api.model.TypeFilter;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+import com.toVisit_varshini_779380_android.R;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -176,7 +168,7 @@ public class MapsActivity extends FragmentActivity implements
         geocoder = new Geocoder(this, Locale.getDefault());
 
         try {
-            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
             address = addresses.get(0).getAddressLine(0);
         } catch (IOException e) {
             e.printStackTrace();
@@ -211,7 +203,7 @@ public class MapsActivity extends FragmentActivity implements
 
         sqLiteDatabase = this.openOrCreateDatabase("UserDB", MODE_PRIVATE, null);
 
-        sqLiteDatabase.execSQL("CREATE TABLE IF NOT EXISTS FavoritePlaces (Title VARCHAR, Latitude VARCHAR, Longitude VARCHAR);");
+        sqLiteDatabase.execSQL("CREATE TABLE IF NOT EXISTS FavoritePlaces (Title VARCHAR, Latitude VARCHAR, Longitude VARCHAR, Visited VARCHAR);");
 
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -325,7 +317,8 @@ public class MapsActivity extends FragmentActivity implements
                             sqLiteDatabase.execSQL("INSERT INTO FavoritePlaces VALUES " +
                                     "('" + userMarker.getTitle().replaceAll("'", "''") + "'," +
                                     "'" + userLat + "'," +
-                                    "'" + userLon + "');");
+                                    "'" + userLon + "'," +
+                                    "'" + "0" + "');");
                             Toast.makeText(MapsActivity.this, "Added to favorites.", Toast.LENGTH_SHORT).show();
                             finish();
                         }

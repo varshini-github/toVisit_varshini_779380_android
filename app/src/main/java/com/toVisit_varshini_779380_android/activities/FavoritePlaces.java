@@ -1,4 +1,4 @@
-package com.toVisit_varshini_779380_android;
+package com.toVisit_varshini_779380_android.activities;
 
 import android.content.Intent;
 import android.database.Cursor;
@@ -19,6 +19,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.toVisit_varshini_779380_android.adapters.FavoritePlacesAdapter;
+import com.toVisit_varshini_779380_android.models.FavoritePlacesModel;
+import com.toVisit_varshini_779380_android.R;
 
 import java.util.ArrayList;
 
@@ -30,6 +33,7 @@ public class FavoritePlaces extends AppCompatActivity {
     FavoritePlacesAdapter favoritePlacesAdapter;
     SQLiteDatabase sqLiteDatabase;
     ArrayList<String> title, lat, lon;
+    ArrayList<Integer> icons;
     ImageView waiting;
     TextView waitingText;
     FloatingActionButton floatingActionButton;
@@ -44,7 +48,7 @@ public class FavoritePlaces extends AppCompatActivity {
 
         sqLiteDatabase = this.openOrCreateDatabase("UserDB", MODE_PRIVATE, null);
 
-        sqLiteDatabase.execSQL("CREATE TABLE IF NOT EXISTS FavoritePlaces (Title VARCHAR, Latitude VARCHAR, Longitude VARCHAR);");
+        sqLiteDatabase.execSQL("CREATE TABLE IF NOT EXISTS FavoritePlaces (Title VARCHAR, Latitude VARCHAR, Longitude VARCHAR, Visited VARCHAR);");
 
         recyclerView = findViewById(R.id.recyclerView);
         waiting = findViewById(R.id.waiting);
@@ -62,10 +66,15 @@ public class FavoritePlaces extends AppCompatActivity {
     }
 
     private void delete(int position) {
+        sqLiteDatabase.execSQL("DELETE FROM FavoritePlaces WHERE Latitude = '" + lat.get(position) + "' AND Longitude = '" + lon.get(position) + "';");
+
+
         favoritePlacesAdapter.removeItem(position);
         title.remove(position);
         lat.remove(position);
         lon.remove(position);
+        icons.remove(position);
+
         Toast.makeText(this, "Location deleted successfully", Toast.LENGTH_SHORT).show();
         if (favoritePlacesAdapter.getItemCount() == 0) {
             waitingText.setVisibility(View.VISIBLE);
@@ -84,11 +93,14 @@ public class FavoritePlaces extends AppCompatActivity {
         title = new ArrayList<>();
         lat = new ArrayList<>();
         lon = new ArrayList<>();
+        icons = new ArrayList<>();
 
         Cursor cursor = sqLiteDatabase.rawQuery("SELECT * FROM " + "FavoritePlaces", null);
         int latColumn = cursor.getColumnIndex("Latitude");
         int lonColumn = cursor.getColumnIndex("Longitude");
         int titleColumn = cursor.getColumnIndex("Title");
+        int visitedColumn = cursor.getColumnIndex("Visited");
+
         cursor.moveToFirst();
 
         if (cursor.getCount() != 0) {
@@ -96,12 +108,17 @@ public class FavoritePlaces extends AppCompatActivity {
                 title.add(cursor.getString(titleColumn));
                 lat.add(cursor.getString(latColumn));
                 lon.add(cursor.getString(lonColumn));
+                if (cursor.getString(visitedColumn).equals("0")) {
+                    icons.add(R.drawable.ic_baseline_favorite_24);
+                } else {
+                    icons.add(R.drawable.ic_check);
+                }
             } while (cursor.moveToNext());
         }
         for (int i = 0; i < title.size(); i++) {
             waitingText.setVisibility(View.GONE);
             waiting.setVisibility(View.GONE);
-            favoritePlaces.add(new FavoritePlacesModel(title.get(i), lat.get(i), lon.get(i)));
+            favoritePlaces.add(new FavoritePlacesModel(title.get(i), lat.get(i), lon.get(i), icons.get(i)));
         }
         if (title.size() == 0) {
             waiting.setVisibility(View.VISIBLE);
@@ -109,7 +126,6 @@ public class FavoritePlaces extends AppCompatActivity {
         } else {
             favoritePlacesAdapter = new FavoritePlacesAdapter(this, favoritePlaces);
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
-            recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
             recyclerView.setAdapter(favoritePlacesAdapter);
 
             ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {

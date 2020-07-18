@@ -8,4 +8,5 @@
     <color name="colorAlto">#DEDEDE</color>
     <color name="colorDeleteBackground">#ff0000</color>
     <color name="colorUpdateBackground">#01bb00</color>
+    <color name="colorWhite">#FFFFFF</color>
 </resources>

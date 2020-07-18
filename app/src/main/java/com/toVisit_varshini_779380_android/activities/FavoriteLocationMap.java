@@ -1,4 +1,4 @@
-package com.toVisit_varshini_779380_android;
+package com.toVisit_varshini_779380_android.activities;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,10 +13,12 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -52,6 +54,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.toVisit_varshini_779380_android.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -60,6 +63,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_SATELLITE;
@@ -80,9 +84,13 @@ public class FavoriteLocationMap extends FragmentActivity implements
     private Location currentLocation;
     private RequestQueue requestQueue;
     private Polyline route;
-    private TextView distanceText, durationText;
+    private TextView distanceText, durationText, directionText;
     private ImageView mapIcon;
     private CardView bottomView;
+    private String title;
+    CardView topView;
+    private SQLiteDatabase sqLiteDatabase;
+    boolean toastShown;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -135,10 +143,12 @@ public class FavoriteLocationMap extends FragmentActivity implements
 
         ImageView change_type = findViewById(R.id.change_type);
         requestQueue = Volley.newRequestQueue(this);
+        toastShown = false;
 
-
-        double lat = Double.parseDouble(getIntent().getExtras().getString("Latitude"));
-        double lon = Double.parseDouble(getIntent().getExtras().getString("Longitude"));
+        title = Objects.requireNonNull(getIntent().getExtras()).getString("Title");
+        double lat = Double.parseDouble(Objects.requireNonNull(getIntent().getExtras().getString("Latitude")));
+        double lon = Double.parseDouble(Objects.requireNonNull(getIntent().getExtras().getString("Longitude")));
+        sqLiteDatabase = this.openOrCreateDatabase("UserDB", MODE_PRIVATE, null);
 
         favoritePlaceLatLng = new LatLng(lat, lon);
 
@@ -147,9 +157,10 @@ public class FavoriteLocationMap extends FragmentActivity implements
 
         mapIcon = findViewById(R.id.icon);
         bottomView = findViewById(R.id.bottomCard);
+        topView = findViewById(R.id.topCard);
         durationText = findViewById(R.id.duration);
         distanceText = findViewById(R.id.distance);
-
+        directionText = findViewById(R.id.directions);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -224,7 +235,7 @@ public class FavoriteLocationMap extends FragmentActivity implements
 
         MarkerOptions markerOptions = new MarkerOptions().position(favoritePlaceLatLng);
 
-        mMap.addMarker(markerOptions);
+        mMap.addMarker(markerOptions.title(title));
 
         initLocCallback();
 
@@ -291,11 +302,24 @@ public class FavoriteLocationMap extends FragmentActivity implements
                             new LatLng(locationResult.getLocations().get(0).getLatitude(),
                                     locationResult.getLocations().get(0).getLongitude()), 15));
                 }
+                Location location = new Location("");
+                location.setLatitude(favoritePlaceLatLng.latitude);
+                location.setLongitude(favoritePlaceLatLng.longitude);
+                if (locationResult.getLocations().get(0).distanceTo(location) <= 50) {
+                    if (!toastShown) {
+                        toastShown = true;
+                        sqLiteDatabase.execSQL("UPDATE FavoritePlaces SET Visited = 1 " +
+                                "WHERE Latitude = '" + favoritePlaceLatLng.latitude + "' AND Longitude = '" + favoritePlaceLatLng.longitude + "';");
+                        Toast.makeText(FavoriteLocationMap.this, "You have reached your destination", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+
                 if (currentLocation == null) {
                     currentLocation = locationResult.getLocations().get(0);
                     drawRoute(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), favoritePlaceLatLng);
                 } else {
-                    if (currentLocation.distanceTo(locationResult.getLocations().get(0)) >= 100) {
+                    if (currentLocation.distanceTo(locationResult.getLocations().get(0)) >= 50) {
                         currentLocation = locationResult.getLocations().get(0);
                         drawRoute(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), favoritePlaceLatLng);
                     }
@@ -317,12 +341,14 @@ public class FavoriteLocationMap extends FragmentActivity implements
         String output = "json";
 
         String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
+        System.out.println("Clicked: " + url);
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         String _distance = "";
                         String _duration = "";
+                        String _direction = "";
                         JSONObject jObject = null;
                         List<List<HashMap<String, String>>> routes = new ArrayList<>();
                         JSONArray jRoutes = null;
@@ -331,6 +357,8 @@ public class FavoriteLocationMap extends FragmentActivity implements
 
                         JSONObject jsonRespRouteDistance = null;
                         JSONObject jsonRespRouteDuration = null;
+                        JSONObject jsonRespRouteDirection = null;
+
                         try {
                             jsonRespRouteDistance = new JSONObject(response)
                                     .getJSONArray("routes")
@@ -338,6 +366,7 @@ public class FavoriteLocationMap extends FragmentActivity implements
                                     .getJSONArray("legs")
                                     .getJSONObject(0)
                                     .getJSONObject("distance");
+
                             jsonRespRouteDuration = new JSONObject(response)
                                     .getJSONArray("routes")
                                     .getJSONObject(0)
@@ -345,15 +374,26 @@ public class FavoriteLocationMap extends FragmentActivity implements
                                     .getJSONObject(0)
                                     .getJSONObject("duration");
 
+                            jsonRespRouteDirection = new JSONObject(response)
+                                    .getJSONArray("routes")
+                                    .getJSONObject(0)
+                                    .getJSONArray("legs")
+                                    .getJSONObject(0)
+                                    .getJSONArray("steps")
+                                    .getJSONObject(0);
+
 
                             _distance = jsonRespRouteDistance.get("text").toString();
                             _duration = jsonRespRouteDuration.get("text").toString();
+                            _direction = jsonRespRouteDirection.get("html_instructions").toString();
+
 
                             bottomView.setVisibility(View.VISIBLE);
+                            topView.setVisibility(View.VISIBLE);
                             mapIcon.setVisibility(View.VISIBLE);
                             durationText.setText(_duration);
                             distanceText.setText(_distance);
-
+                            directionText.setText(Html.fromHtml(_direction));
 
                         } catch (JSONException e) {
                             e.printStackTrace();

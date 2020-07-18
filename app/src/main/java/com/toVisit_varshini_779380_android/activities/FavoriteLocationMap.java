@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -161,6 +163,13 @@ public class FavoriteLocationMap extends FragmentActivity implements
         durationText = findViewById(R.id.duration);
         distanceText = findViewById(R.id.distance);
         directionText = findViewById(R.id.directions);
+        ConstraintLayout parent = findViewById(R.id.parent);
+
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(parent);
+        constraintSet.connect(R.id.change_type,ConstraintSet.TOP,R.id.topCard,ConstraintSet.BOTTOM,20);
+        constraintSet.applyTo(parent);
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);

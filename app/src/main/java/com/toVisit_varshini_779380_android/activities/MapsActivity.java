@@ -109,6 +109,7 @@ public class MapsActivity extends FragmentActivity implements
     private boolean displayingNearby;
     private Location currentLocation;
     private RequestQueue requestQueue;
+    private ImageView zoomIn, zoomOut, animate;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -310,6 +311,35 @@ public class MapsActivity extends FragmentActivity implements
         btnCafes = findViewById(R.id.cafes);
         btnMuseums = findViewById(R.id.museums);
         btnRestaurants = findViewById(R.id.restaurants);
+
+        zoomIn = findViewById(R.id.zoom_in);
+        zoomOut = findViewById(R.id.zoom_out);
+
+        animate = findViewById(R.id.animate);
+
+        zoomIn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMap.animateCamera(CameraUpdateFactory.zoomIn());
+            }
+        });
+
+        zoomOut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMap.animateCamera(CameraUpdateFactory.zoomOut());
+            }
+        });
+
+        animate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (currentLocation != null) {
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), 15));
+                }
+            }
+        });
+
 
         nearby.setVisibility(View.VISIBLE);
 

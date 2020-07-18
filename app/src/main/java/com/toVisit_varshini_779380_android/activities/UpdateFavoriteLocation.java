@@ -3,6 +3,8 @@ package com.toVisit_varshini_779380_android.activities;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -15,6 +17,7 @@ import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Address;
 import android.location.Geocoder;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -73,7 +76,6 @@ public class UpdateFavoriteLocation extends FragmentActivity implements OnMapRea
         GoogleMap.OnMarkerDragListener {
 
     private GoogleMap mMap;
-    private boolean cameraAnimated;
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
@@ -81,6 +83,8 @@ public class UpdateFavoriteLocation extends FragmentActivity implements OnMapRea
     private SQLiteDatabase sqLiteDatabase;
     Button update;
     double favoritePlaceLat, favoritePlaceLon;
+    Location currentLocation;
+    private ImageView zoomIn, zoomOut, animate;
 
     protected synchronized void buildGoogleApiClient() {
         GoogleApiClient googleApiClient = new GoogleApiClient.Builder(this)
@@ -154,12 +158,7 @@ public class UpdateFavoriteLocation extends FragmentActivity implements OnMapRea
                 if (locationResult == null) {
                     return;
                 }
-                if (!cameraAnimated) {
-                    cameraAnimated = true;
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                            new LatLng(locationResult.getLocations().get(0).getLatitude(),
-                                    locationResult.getLocations().get(0).getLongitude()), 15));
-                }
+                currentLocation = locationResult.getLocations().get(0);
             }
         };
     }
@@ -200,9 +199,46 @@ public class UpdateFavoriteLocation extends FragmentActivity implements OnMapRea
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        ConstraintLayout parent = findViewById(R.id.parent);
+
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(parent);
+        constraintSet.connect(R.id.animate, ConstraintSet.BOTTOM, R.id.update, ConstraintSet.TOP, 20);
+        constraintSet.applyTo(parent);
+
         ImageView change_type = findViewById(R.id.change_type);
         update = findViewById(R.id.update);
         update.setVisibility(View.VISIBLE);
+
+        zoomIn = findViewById(R.id.zoom_in);
+        zoomOut = findViewById(R.id.zoom_out);
+
+        animate = findViewById(R.id.animate);
+
+        zoomIn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMap.animateCamera(CameraUpdateFactory.zoomIn());
+            }
+        });
+
+        zoomOut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMap.animateCamera(CameraUpdateFactory.zoomOut());
+            }
+        });
+
+        animate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (currentLocation != null) {
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), 15));
+                }
+            }
+        });
+
+
         update.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -293,7 +329,6 @@ public class UpdateFavoriteLocation extends FragmentActivity implements OnMapRea
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        cameraAnimated = false;
         mMap.setOnMarkerDragListener(this);
 
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
@@ -304,6 +339,8 @@ public class UpdateFavoriteLocation extends FragmentActivity implements OnMapRea
                 markerOptions
                         .title(address));
         userMarker.setDraggable(true);
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(favoritePlaceLat, favoritePlaceLon), 15));
 
         initLocCallback();
 

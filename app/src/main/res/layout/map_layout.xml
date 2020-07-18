@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
     android:id="@+id/parent"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
 
@@ -51,42 +51,45 @@
 
     <HorizontalScrollView
         android:id="@+id/nearby"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/search_place"
-        android:layout_marginTop="10dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/search_place">
+
         <LinearLayout
-            android:layout_margin="10dp"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Cafes"
-                android:padding="10dp"
-                android:textColor="@color/colorBlack"
-                android:background="@drawable/bg_button_unselected"
-                android:id="@+id/cafes"/>
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp">
 
             <Button
-                android:layout_marginStart="10dp"
+                android:id="@+id/cafes"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
-                android:text="Restaurants"
-                android:padding="10dp"
-                android:textColor="@color/colorBlack"
                 android:background="@drawable/bg_button_unselected"
-                android:id="@+id/restaurants"/>
+                android:padding="10dp"
+                android:text="Cafes"
+                android:textColor="@color/colorBlack" />
+
             <Button
-                android:layout_marginStart="10dp"
+                android:id="@+id/restaurants"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
-                android:text="Museums"
-                android:padding="10dp"
-                android:textColor="@color/colorBlack"
+                android:layout_marginStart="10dp"
                 android:background="@drawable/bg_button_unselected"
-                android:id="@+id/museums"/>
+                android:padding="10dp"
+                android:text="Restaurants"
+                android:textColor="@color/colorBlack" />
+
+            <Button
+                android:id="@+id/museums"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_button_unselected"
+                android:padding="10dp"
+                android:text="Museums"
+                android:textColor="@color/colorBlack" />
 
         </LinearLayout>
 
@@ -113,6 +116,41 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/change_type" />
+
+
+    <ImageView
+        android:id="@+id/zoom_in"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="10dp"
+        android:src="@drawable/ic_zoom_in"
+        app:layout_constraintBottom_toTopOf="@id/zoom_out"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageView
+        android:id="@+id/zoom_out"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:src="@drawable/ic_zoom_out"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <ImageView
+        android:id="@+id/animate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:src="@drawable/ic_gps"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+
 
 
     <androidx.cardview.widget.CardView

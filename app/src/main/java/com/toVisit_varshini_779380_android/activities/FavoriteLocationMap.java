@@ -93,6 +93,7 @@ public class FavoriteLocationMap extends FragmentActivity implements
     CardView topView;
     private SQLiteDatabase sqLiteDatabase;
     boolean toastShown;
+    private ImageView zoomIn, zoomOut, animate;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -163,12 +164,46 @@ public class FavoriteLocationMap extends FragmentActivity implements
         durationText = findViewById(R.id.duration);
         distanceText = findViewById(R.id.distance);
         directionText = findViewById(R.id.directions);
+
+
+
+
         ConstraintLayout parent = findViewById(R.id.parent);
 
         ConstraintSet constraintSet = new ConstraintSet();
         constraintSet.clone(parent);
         constraintSet.connect(R.id.change_type,ConstraintSet.TOP,R.id.topCard,ConstraintSet.BOTTOM,20);
+        constraintSet.connect(R.id.animate,ConstraintSet.BOTTOM,R.id.bottomCard,ConstraintSet.TOP,40);
         constraintSet.applyTo(parent);
+
+
+        zoomIn = findViewById(R.id.zoom_in);
+        zoomOut = findViewById(R.id.zoom_out);
+
+        animate = findViewById(R.id.animate);
+
+        zoomIn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMap.animateCamera(CameraUpdateFactory.zoomIn());
+            }
+        });
+
+        zoomOut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMap.animateCamera(CameraUpdateFactory.zoomOut());
+            }
+        });
+
+        animate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (currentLocation != null) {
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), 15));
+                }
+            }
+        });
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);

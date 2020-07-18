@@ -55,6 +55,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -145,7 +146,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onMapLongClick(LatLng latLng) {
         if (userMarker == null) {
-            MarkerOptions markerOptions = new MarkerOptions().position(latLng);
+            MarkerOptions markerOptions = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker));
             String address = getAddress(latLng);
             userMarker = mMap.addMarker(
                     markerOptions
@@ -159,6 +160,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public boolean onMarkerClick(final Marker marker) {
         if (marker.getTag() != null && !marker.getTag().equals("UserMarker")) {
+            marker.showInfoWindow();
             ArrayList<String> favoriteLat = new ArrayList<>();
             ArrayList<String> favoriteLon = new ArrayList<>();
             Cursor cursor = sqLiteDatabase.rawQuery("SELECT * FROM " + "FavoritePlaces", null);
@@ -496,7 +498,7 @@ public class MapsActivity extends FragmentActivity implements
 
         mMap.clear();
         if (userMarker != null) {
-            MarkerOptions markerOptions = new MarkerOptions().position(userMarker.getPosition());
+            MarkerOptions markerOptions = new MarkerOptions().position(userMarker.getPosition()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker));
             userMarker = mMap.addMarker(markerOptions.title(userMarker.getTitle()));
             userMarker.setTag("UserMarker");
         }
@@ -616,7 +618,8 @@ public class MapsActivity extends FragmentActivity implements
                         userMarker.showInfoWindow();
                     }
                 } else {
-                    MarkerOptions markerOptions = new MarkerOptions().position(place.getLatLng());
+
+                    MarkerOptions markerOptions = new MarkerOptions().position(place.getLatLng()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker));
                     String address = getAddress(place.getLatLng());
                     userMarker = mMap.addMarker(
                             markerOptions
@@ -711,7 +714,7 @@ public class MapsActivity extends FragmentActivity implements
             mMap.clear();
             displayingNearby = false;
             if (userMarker != null) {
-                MarkerOptions markerOptions = new MarkerOptions().position(userMarker.getPosition());
+                MarkerOptions markerOptions = new MarkerOptions().position(userMarker.getPosition()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker));
                 userMarker = mMap.addMarker(markerOptions.title(userMarker.getTitle()));
                 userMarker.setTag("UserMarker");
             }

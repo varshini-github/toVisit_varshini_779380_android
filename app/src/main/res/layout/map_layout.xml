@@ -48,6 +48,49 @@
             android:layout_gravity="center" />
     </androidx.cardview.widget.CardView>
 
+    <HorizontalScrollView
+        android:id="@+id/nearby"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/search_place"
+        android:layout_marginTop="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <LinearLayout
+            android:layout_margin="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Cafes"
+                android:padding="10dp"
+                android:textColor="@color/colorBlack"
+                android:background="@drawable/bg_button_unselected"
+                android:id="@+id/cafes"/>
+
+            <Button
+                android:layout_marginStart="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Restaurants"
+                android:padding="10dp"
+                android:textColor="@color/colorBlack"
+                android:background="@drawable/bg_button_unselected"
+                android:id="@+id/restaurants"/>
+            <Button
+                android:layout_marginStart="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Museums"
+                android:padding="10dp"
+                android:textColor="@color/colorBlack"
+                android:background="@drawable/bg_button_unselected"
+                android:id="@+id/museums"/>
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
     <ImageView
         android:id="@+id/change_type"
         android:layout_width="wrap_content"
@@ -56,7 +99,7 @@
         android:layout_marginEnd="10dp"
         android:src="@drawable/change_map_type"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/search_place" />
+        app:layout_constraintTop_toBottomOf="@id/nearby" />
 
 
     <ImageView

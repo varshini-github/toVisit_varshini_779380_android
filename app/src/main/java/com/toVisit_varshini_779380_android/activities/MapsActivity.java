@@ -262,7 +262,7 @@ public class MapsActivity extends FragmentActivity implements
         try {
             addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
             address = addresses.get(0).getAddressLine(0);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
